@@ -397,7 +397,6 @@ func combineConfigs(cfgs []declcfg.DeclarativeConfig) *declcfg.DeclarativeConfig
 	packages := make(map[string]struct{})
 	bundles := make(map[string]struct{})
 	packageChannels := map[string]sets.String{}
-	channelDefinedEntries := map[string]sets.String{}
 
 	// Must provide the cfgs in order from
 	// newest to oldest
@@ -414,17 +413,9 @@ func combineConfigs(cfgs []declcfg.DeclarativeConfig) *declcfg.DeclarativeConfig
 				channels = sets.NewString()
 			}
 			if channels.Has(ch.Name) {
-				cde, ok := packageChannels[ch.Name]
-				if !ok {
-					cde = sets.NewString()
-				}
-				for _, entry := range ch.Entries {
-					if cde.Has(entry.Name) {
-						continue
-					}
-					cde = cde.Insert(entry.Name)
-				}
-				channelDefinedEntries[ch.Name] = cde
+				idx := indexOfChannel(ch, out.Channels)
+				// Need to deduplicate entries
+				out.Channels[idx].Entries = append(out.Channels[idx].Entries, ch.Entries...)
 				continue
 			}
 			channels.Insert(ch.Name)
@@ -440,4 +431,13 @@ func combineConfigs(cfgs []declcfg.DeclarativeConfig) *declcfg.DeclarativeConfig
 		out.Others = append(out.Others, cfg.Others...)
 	}
 	return out
+}
+
+func indexOfChannel(element declcfg.Channel, data []declcfg.Channel) int {
+	for k, v := range data {
+		if element.Name == v.Name && element.Package == v.Package {
+			return k
+		}
+	}
+	return -1
 }
