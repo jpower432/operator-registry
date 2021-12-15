@@ -124,7 +124,7 @@ func newMigrateRegistry(imageMap map[image.Reference]string) (image.Registry, er
 		return nil, err
 	}
 
-	subDeclcfgImage, err := fs.Sub(declcfgImage, "testdata/foo-index-v0.2.0-declcfg")
+	subDeclcfgImage, err := fs.Sub(declcfgImage2, "testdata/foo-index-v0.2.0-declcfg")
 	if err != nil {
 		return nil, err
 	}

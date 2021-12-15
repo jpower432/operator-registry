@@ -394,11 +394,50 @@ func renderBundleObjects(cfg *declcfg.DeclarativeConfig) {
 
 func combineConfigs(cfgs []declcfg.DeclarativeConfig) *declcfg.DeclarativeConfig {
 	out := &declcfg.DeclarativeConfig{}
-	for _, in := range cfgs {
-		out.Packages = append(out.Packages, in.Packages...)
-		out.Channels = append(out.Channels, in.Channels...)
-		out.Bundles = append(out.Bundles, in.Bundles...)
-		out.Others = append(out.Others, in.Others...)
+	packages := make(map[string]struct{})
+	bundles := make(map[string]struct{})
+	packageChannels := map[string]sets.String{}
+	channelDefinedEntries := map[string]sets.String{}
+
+	// Must provide the cfgs in order from
+	// newest to oldest
+	for _, cfg := range cfgs {
+		for _, pkg := range cfg.Packages {
+			if _, seen := packages[pkg.Name]; !seen {
+				packages[pkg.Name] = struct{}{}
+				out.Packages = append(out.Packages, pkg)
+			}
+		}
+		for _, ch := range cfg.Channels {
+			channels, ok := packageChannels[ch.Package]
+			if !ok {
+				channels = sets.NewString()
+			}
+			if channels.Has(ch.Name) {
+				cde, ok := packageChannels[ch.Name]
+				if !ok {
+					cde = sets.NewString()
+				}
+				for _, entry := range ch.Entries {
+					if cde.Has(entry.Name) {
+						continue
+					}
+					cde = cde.Insert(entry.Name)
+				}
+				channelDefinedEntries[ch.Name] = cde
+				continue
+			}
+			channels.Insert(ch.Name)
+			packageChannels[ch.Package] = channels
+			out.Channels = append(out.Channels, ch)
+		}
+		for _, bnd := range cfg.Bundles {
+			if _, seen := bundles[bnd.Image]; !seen {
+				bundles[bnd.Image] = struct{}{}
+				out.Bundles = append(out.Bundles, bnd)
+			}
+		}
+		out.Others = append(out.Others, cfg.Others...)
 	}
 	return out
 }

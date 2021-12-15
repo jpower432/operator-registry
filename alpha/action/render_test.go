@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -345,9 +346,191 @@ func TestRender(t *testing.T) {
 			assertion: require.NoError,
 		},
 		{
+			name: "Success/DeclcfgMultipleImages",
+			render: action.Render{
+				Refs:     []string{"testdata/foo-index-v0.2.0-declcfg", "test.registry/foo-operator/foo-index-declcfg:v0.1.0"},
+				Registry: reg,
+			},
+			expectCfg: &declcfg.DeclarativeConfig{
+				Packages: []declcfg.Package{
+					{
+						Schema:         "olm.package",
+						Name:           "foo",
+						DefaultChannel: "beta",
+					},
+				},
+				Channels: []declcfg.Channel{
+					{Schema: "olm.channel", Package: "foo", Name: "beta", Entries: []declcfg.ChannelEntry{
+						{Name: "foo.v0.1.0", SkipRange: "<0.1.0"},
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0", SkipRange: "<0.2.0", Skips: []string{"foo.v0.1.1", "foo.v0.1.2"}},
+					}},
+					{Schema: "olm.channel", Package: "foo", Name: "stable", Entries: []declcfg.ChannelEntry{
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0", SkipRange: "<0.2.0", Skips: []string{"foo.v0.1.1", "foo.v0.1.2"}},
+					}},
+				},
+				Bundles: []declcfg.Bundle{
+					{
+						Schema:  "olm.bundle",
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "test.registry/foo-operator/foo-bundle:v0.1.0",
+						Properties: []property.Property{
+							property.MustBuildGVK("test.foo", "v1", "Foo"),
+							property.MustBuildGVKRequired("test.bar", "v1alpha1", "Bar"),
+							property.MustBuildPackage("foo", "0.1.0"),
+							property.MustBuildPackageRequired("bar", "<0.1.0"),
+							property.MustBuildBundleObjectData(foov1csv),
+							property.MustBuildBundleObjectData(foov1crd),
+						},
+						RelatedImages: []declcfg.RelatedImage{
+							{
+								Image: "test.registry/foo-operator/foo-bundle:v0.1.0",
+							},
+							{
+								Name:  "operator",
+								Image: "test.registry/foo-operator/foo:v0.1.0",
+							},
+						},
+						CsvJSON: string(foov1csv),
+						Objects: []string{string(foov1csv), string(foov1crd)},
+					},
+					{
+						Schema:  "olm.bundle",
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "test.registry/foo-operator/foo-bundle:v0.2.0",
+						Properties: []property.Property{
+							property.MustBuildGVK("test.foo", "v1", "Foo"),
+							property.MustBuildGVKRequired("test.bar", "v1alpha1", "Bar"),
+							property.MustBuildPackage("foo", "0.2.0"),
+							property.MustBuildPackageRequired("bar", "<0.1.0"),
+							property.MustBuildBundleObjectData(foov2csv),
+							property.MustBuildBundleObjectData(foov2crd),
+						},
+						RelatedImages: []declcfg.RelatedImage{
+							{
+								Image: "test.registry/foo-operator/foo-2:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-bundle:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-init-2:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-init:v0.2.0",
+							},
+							{
+								Name:  "other",
+								Image: "test.registry/foo-operator/foo-other:v0.2.0",
+							},
+							{
+								Name:  "operator",
+								Image: "test.registry/foo-operator/foo:v0.2.0",
+							},
+						},
+						CsvJSON: string(foov2csv),
+						Objects: []string{string(foov2csv), string(foov2crd)},
+					},
+				},
+			},
+			assertion: require.NoError,
+		},
+		{
 			name: "Success/DeclcfgDirectory",
 			render: action.Render{
 				Refs:     []string{"testdata/foo-index-v0.2.0-declcfg"},
+				Registry: reg,
+			},
+			expectCfg: &declcfg.DeclarativeConfig{
+				Packages: []declcfg.Package{
+					{
+						Schema:         "olm.package",
+						Name:           "foo",
+						DefaultChannel: "beta",
+					},
+				},
+				Channels: []declcfg.Channel{
+					{Schema: "olm.channel", Package: "foo", Name: "beta", Entries: []declcfg.ChannelEntry{
+						{Name: "foo.v0.1.0", SkipRange: "<0.1.0"},
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0", SkipRange: "<0.2.0", Skips: []string{"foo.v0.1.1", "foo.v0.1.2"}},
+					}},
+					{Schema: "olm.channel", Package: "foo", Name: "stable", Entries: []declcfg.ChannelEntry{
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0", SkipRange: "<0.2.0", Skips: []string{"foo.v0.1.1", "foo.v0.1.2"}},
+					}},
+				},
+				Bundles: []declcfg.Bundle{
+					{
+						Schema:  "olm.bundle",
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "test.registry/foo-operator/foo-bundle:v0.1.0",
+						Properties: []property.Property{
+							property.MustBuildGVK("test.foo", "v1", "Foo"),
+							property.MustBuildGVKRequired("test.bar", "v1alpha1", "Bar"),
+							property.MustBuildPackage("foo", "0.1.0"),
+							property.MustBuildPackageRequired("bar", "<0.1.0"),
+							property.MustBuildBundleObjectData(foov1csv),
+							property.MustBuildBundleObjectData(foov1crd),
+						},
+						RelatedImages: []declcfg.RelatedImage{
+							{
+								Image: "test.registry/foo-operator/foo-bundle:v0.1.0",
+							},
+							{
+								Name:  "operator",
+								Image: "test.registry/foo-operator/foo:v0.1.0",
+							},
+						},
+						CsvJSON: string(foov1csv),
+						Objects: []string{string(foov1csv), string(foov1crd)},
+					},
+					{
+						Schema:  "olm.bundle",
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "test.registry/foo-operator/foo-bundle:v0.2.0",
+						Properties: []property.Property{
+							property.MustBuildGVK("test.foo", "v1", "Foo"),
+							property.MustBuildGVKRequired("test.bar", "v1alpha1", "Bar"),
+							property.MustBuildPackage("foo", "0.2.0"),
+							property.MustBuildPackageRequired("bar", "<0.1.0"),
+							property.MustBuildBundleObjectData(foov2csv),
+							property.MustBuildBundleObjectData(foov2crd),
+						},
+						RelatedImages: []declcfg.RelatedImage{
+							{
+								Image: "test.registry/foo-operator/foo-2:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-bundle:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-init-2:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-init:v0.2.0",
+							},
+							{
+								Name:  "other",
+								Image: "test.registry/foo-operator/foo-other:v0.2.0",
+							},
+							{
+								Name:  "operator",
+								Image: "test.registry/foo-operator/foo:v0.2.0",
+							},
+						},
+						CsvJSON: string(foov2csv),
+						Objects: []string{string(foov2csv), string(foov2crd)},
+					},
+				},
+			},
+			assertion: require.NoError,
+		},
+		{
+			name: "Success/DeclcfgMultipleDirectories",
+			render: action.Render{
+				Refs:     []string{"testdata/foo-index-v0.2.0-declcfg", "testdata/foo-index-v0.1.0-declcfg"},
 				Registry: reg,
 			},
 			expectCfg: &declcfg.DeclarativeConfig{
@@ -748,8 +931,11 @@ var bundleImageV2 embed.FS
 //go:embed testdata/foo-bundle-v0.2.0-no-csv-related-images/metadata/*
 var bundleImageV2NoCSVRelatedImages embed.FS
 
+//go:embed testdata/foo-index-v0.1.0-declcfg/foo/*
+var declcfgImage1 embed.FS
+
 //go:embed testdata/foo-index-v0.2.0-declcfg/foo/*
-var declcfgImage embed.FS
+var declcfgImage2 embed.FS
 
 func newRegistry() (image.Registry, error) {
 	imageMap := map[image.Reference]string{
@@ -761,7 +947,11 @@ func newRegistry() (image.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	subDeclcfgImage, err := fs.Sub(declcfgImage, "testdata/foo-index-v0.2.0-declcfg")
+	subDeclcfgImagev2, err := fs.Sub(declcfgImage2, "testdata/foo-index-v0.2.0-declcfg")
+	if err != nil {
+		return nil, err
+	}
+	subDeclcfgImagev1, err := fs.Sub(declcfgImage1, "testdata/foo-index-v0.1.0-declcfg")
 	if err != nil {
 		return nil, err
 	}
@@ -771,7 +961,7 @@ func newRegistry() (image.Registry, error) {
 	}
 	subBundleImageV2, err := fs.Sub(bundleImageV2, "testdata/foo-bundle-v0.2.0")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("no dir %v", err)
 	}
 	subBundleImageV2NoCSVRelatedImages, err := fs.Sub(bundleImageV2NoCSVRelatedImages, "testdata/foo-bundle-v0.2.0-no-csv-related-images")
 	if err != nil {
@@ -785,11 +975,17 @@ func newRegistry() (image.Registry, error) {
 				},
 				FS: subSqliteImage,
 			},
+			image.SimpleReference("test.registry/foo-operator/foo-index-declcfg:v0.1.0"): {
+				Labels: map[string]string{
+					"operators.operatorframework.io.index.configs.v1": "/foo",
+				},
+				FS: subDeclcfgImagev1,
+			},
 			image.SimpleReference("test.registry/foo-operator/foo-index-declcfg:v0.2.0"): {
 				Labels: map[string]string{
 					"operators.operatorframework.io.index.configs.v1": "/foo",
 				},
-				FS: subDeclcfgImage,
+				FS: subDeclcfgImagev2,
 			},
 			image.SimpleReference("test.registry/foo-operator/foo-bundle:v0.1.0"): {
 				Labels: map[string]string{
