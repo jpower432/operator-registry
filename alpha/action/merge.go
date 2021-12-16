@@ -23,7 +23,7 @@ const (
 	TwoWay
 )
 
-func (mt MergeType) mergeDC(cfg *declcfg.DeclarativeConfig) error {
+func (mt MergeType) MergeDC(cfg *declcfg.DeclarativeConfig) error {
 	switch mt {
 	case PreferLast:
 		return mergeDCPreferLast(cfg)
@@ -163,7 +163,10 @@ func mergeChannels(inChs []declcfg.Channel) (outChs []declcfg.Channel, err error
 	for i, ch := range inChs {
 		chKey := keyForDCObj(ch)
 		chsByKey[chKey] = append(chsByKey[chKey], inChs[i])
-		entriesByKey[chKey] = make(map[string][]declcfg.ChannelEntry)
+		_, ok := entriesByKey[chKey]
+		if !ok {
+			entriesByKey[chKey] = make(map[string][]declcfg.ChannelEntry)
+		}
 		for j, e := range ch.Entries {
 			entriesByKey[chKey][e.Name] = append(entriesByKey[chKey][e.Name], ch.Entries[j])
 		}
