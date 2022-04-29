@@ -2275,7 +2275,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{{Name: "bar"}},
 				},
-				HeadsOnly: true,
+				HeadsOnly: false,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2341,7 +2341,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{{Name: "foo", Channels: []DiffIncludeChannel{{Name: "stable"}}}},
 				},
-				HeadsOnly: true,
+				HeadsOnly: false,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2358,6 +2358,122 @@ func TestDiffHeadsOnly(t *testing.T) {
 						Name:   "foo.v0.1.0", Package: "foo", Image: "reg/foo:latest",
 						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0")},
 					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.2.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.2.0")},
+					},
+				},
+			},
+		},
+		{
+			name: "HasDiff/IncludePackageHeadsOnly",
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{{Name: "foo.v0.1.0"}}},
+					{Schema: schemaChannel, Name: "stable", Package: "bar", Entries: []ChannelEntry{
+						{Name: "bar.v0.1.0"}, {Name: "bar.v0.2.0", Replaces: "bar.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.1.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "bar.v0.1.0", Package: "bar", Image: "reg/bar:latest",
+						Properties: []property.Property{property.MustBuildPackage("bar", "0.1.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "bar.v0.2.0", Package: "bar", Image: "reg/bar:latest",
+						Properties: []property.Property{property.MustBuildPackage("bar", "0.2.0")},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{{Name: "bar"}},
+				},
+				HeadsOnly: true,
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "bar", Entries: []ChannelEntry{
+						{Name: "bar.v0.2.0", Replaces: "bar.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema: schemaBundle,
+						Name:   "bar.v0.2.0", Package: "bar", Image: "reg/bar:latest",
+						Properties: []property.Property{property.MustBuildPackage("bar", "0.2.0")},
+					},
+				},
+			},
+		},
+		{
+			name: "HasDiff/IncludeChannelHeadsOnly",
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "alpha"}, // Make sure the default channel is still updated.
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"}, {Name: "foo.v0.2.0", Replaces: "foo.v0.1.0"}},
+					},
+					{Schema: schemaChannel, Name: "alpha", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0-alpha.0"}, {Name: "foo.v0.2.0-alpha.0", Replaces: "foo.v0.1.0-alpha.0"}},
+					},
+				},
+				Bundles: []Bundle{
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.1.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.2.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.2.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.1.0-alpha.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0-alpha.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.2.0-alpha.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.2.0-alpha.0")},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{{Name: "foo", Channels: []DiffIncludeChannel{{Name: "stable"}}}},
+				},
+				HeadsOnly: true,
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "alpha"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0"}},
+					},
+				},
+				Bundles: []Bundle{
 					{
 						Schema: schemaBundle,
 						Name:   "foo.v0.2.0", Package: "foo", Image: "reg/foo:latest",

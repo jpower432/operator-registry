@@ -39,6 +39,7 @@ func (g *DiffGenerator) init() {
 		if g.Includer.Logger == nil {
 			g.Includer.Logger = g.Logger
 		}
+		g.Includer.HeadsOnly = g.HeadsOnly
 	})
 }
 
