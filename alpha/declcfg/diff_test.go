@@ -1318,6 +1318,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			},
 			g: &DiffGenerator{
 				IncludeAdditively: false,
+				HeadsOnly:         true,
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{
 						{
@@ -1354,7 +1355,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
@@ -1468,7 +1471,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -1559,7 +1564,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
@@ -1652,6 +1659,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			},
 			g: &DiffGenerator{
 				SkipDependencies: true,
+				HeadsOnly:        true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -1788,7 +1796,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
@@ -1980,6 +1990,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			},
 			g: &DiffGenerator{
 				IncludeAdditively: false,
+				HeadsOnly:         true,
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{
 						{
@@ -2127,6 +2138,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			},
 			g: &DiffGenerator{
 				IncludeAdditively: true,
+				HeadsOnly:         true,
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{
 						{
@@ -2263,6 +2275,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{{Name: "bar"}},
 				},
+				HeadsOnly: true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2328,6 +2341,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{{Name: "foo", Channels: []DiffIncludeChannel{{Name: "stable"}}}},
 				},
+				HeadsOnly: true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2394,6 +2408,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 							{Name: "stable", Versions: []semver.Version{{Major: 0, Minor: 2, Patch: 0}}}},
 						}},
 				},
+				HeadsOnly: true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2531,6 +2546,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 						},
 					},
 				},
+				HeadsOnly: true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
