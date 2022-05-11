@@ -115,6 +115,9 @@ func (g *DiffGenerator) Run(oldModel, newModel model.Model) (model.Model, error)
 	case isInclude: // Add included objects to outputModel.
 
 		// Add included packages/channels/bundles from newModel to outputModel.
+		// Assume heads-only is false for include additively since we already have the channel heads
+		// in the output model.
+		g.Includer.HeadsOnly = false
 		if err := g.Includer.Run(newModel, outputModel); err != nil {
 			return nil, err
 		}

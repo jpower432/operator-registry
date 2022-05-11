@@ -215,23 +215,18 @@ func (ipkg DiffIncludePackage) includeNewInOutputModel(newModel, outputModel mod
 
 		var bundles []*model.Bundle
 		var err error
-		// No versions have been specified, but heads-only set to true, get the channel head only.
 		switch {
 		case ipkg.HeadsOnly && len(ich.Versions) == 0 && len(ich.Bundles) == 0 && ich.Range == nil:
-			head, err := newCh.Head()
-			if err != nil {
-				ierrs = append(ierrs, fmt.Errorf("[package=%q channel=%q] %v", newPkg.Name, newCh.Name, err))
-				continue
-			}
-			bundles = append(bundles, head)
+			// No versions have been specified, but heads-only set to true, get the channel head only.
+			bundles, err = getHeadBundle(newCh)
 		case ich.Range != nil:
 			bundles, err = getBundlesForRange(newCh, ich.Range, chLog)
 		default:
 			bundles, err = getBundlesForVersions(newCh, ich.Versions, ich.Bundles, chLog, skipMissingBundleForChannels[newCh.Name])
-			if err != nil {
-				ierrs = append(ierrs, fmt.Errorf("[package=%q channel=%q] %v", newPkg.Name, newCh.Name, err))
-				continue
-			}
+		}
+		if err != nil {
+			ierrs = append(ierrs, fmt.Errorf("[package=%q channel=%q] %v", newPkg.Name, newCh.Name, err))
+			continue
 		}
 
 		outputCh := copyChannelNoBundles(newCh, outputPkg)
@@ -243,6 +238,15 @@ func (ipkg DiffIncludePackage) includeNewInOutputModel(newModel, outputModel mod
 	}
 
 	return ierrs
+}
+
+// getHeadBundle will return the head bundle of the channel as a slice of bundles.
+func getHeadBundle(ch *model.Channel) ([]*model.Bundle, error) {
+	head, err := ch.Head()
+	if err != nil {
+		return nil, fmt.Errorf("channel=%q] %v", ch.Name, err)
+	}
+	return []*model.Bundle{head}, nil
 }
 
 // getBundlesForVersions returns all bundles matching a version in vers
